@@ -34,7 +34,9 @@ function persist() {
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const $ = (id) => document.getElementById(id);
-const rulesRead = () => localStorage.getItem(RULES_KEY) === "1";
+// le regole si leggono una volta per ogni NUOVO accesso (chiave per account)
+const rulesKey = () => RULES_KEY + "." + (fb && fb.user ? fb.user.uid : "local");
+const rulesRead = () => localStorage.getItem(rulesKey()) === "1";
 const skippedLogin = () => sessionStorage.getItem(SKIP_KEY) === "1";
 
 function esc(s) {
@@ -66,8 +68,10 @@ function updateGates() {
 const ROUTES = ["benvenuto", "regole", "brutta", "bella", "realizzati", "lettura"];
 const GATED = ["brutta", "bella", "realizzati", "lettura"];
 function route() {
-  let r = (location.hash.replace("#/", "") || "regole").split("?")[0];
-  if (!ROUTES.includes(r)) r = "regole";
+  // senza hash: se le regole di questo accesso sono già lette si parte dalla brutta
+  const fallback = rulesRead() ? "brutta" : "regole";
+  let r = (location.hash.replace("#/", "") || fallback).split("?")[0];
+  if (!ROUTES.includes(r)) r = fallback;
   if (needsLogin()) r = "benvenuto";
   else if (r === "benvenuto") r = "regole";
   else if (GATED.includes(r) && !rulesRead()) r = "regole";
@@ -116,6 +120,8 @@ function renderCounters() {
   $("navCountBrutta").textContent = nBrutta;
   $("navCountBella").textContent = active;
   $("navCountDone").textContent = doneWishes().length;
+  $("tabCountBrutta").textContent = nBrutta || "";
+  $("tabCountBella").textContent = active || "";
   $("progressBrutta").style.width = Math.min(100, nBrutta / MAX_BRUTTA * 100) + "%";
   $("labelBrutta").textContent = t("rough_count", { n: nBrutta });
   $("progressBella").style.width = Math.min(100, active / MAX_BELLA * 100) + "%";
@@ -322,7 +328,7 @@ function onListClick(e) {
 
 // ── regole → sblocco quaderni ──
 $("rulesCta").addEventListener("click", () => {
-  localStorage.setItem(RULES_KEY, "1");
+  localStorage.setItem(rulesKey(), "1");
   updateGates();
   location.hash = "#/brutta";
 });

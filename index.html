@@ -30,9 +30,6 @@
     <a href="#/realizzati" data-route="realizzati" class="gated"><span data-i18n="nav_done">Realizzati</span> <span class="pill" id="navCountDone">0</span></a>
   </nav>
   <div class="topbar-right">
-    <div class="lang-switch" id="langSwitch">
-      <button data-lang="it">IT</button><button data-lang="en">EN</button><button data-lang="de">DE</button>
-    </div>
     <button id="profileChip" class="account-btn hidden" data-i18n-title="logout">👤 <span id="profileName"></span></button>
   </div>
 </header>
@@ -45,6 +42,9 @@
   <section id="view-benvenuto" class="view hidden">
     <div class="welcome-stars" aria-hidden="true"><span>✨</span><span>⭐</span><span>🌙</span><span>✨</span><span>💫</span><span>✨</span></div>
     <div class="auth-box welcome-box">
+      <div class="lang-switch lang-switch-big" id="langSwitch">
+        <button data-lang="it">🇮🇹 Italiano</button><button data-lang="en">🇬🇧 English</button><button data-lang="de">🇩🇪 Deutsch</button>
+      </div>
       <p class="hero-kicker" data-i18n="welcome_kicker">La tecnica di Igor Sibaldi</p>
       <h1 class="welcome-title" data-i18n="welcome_title">101 Desideri</h1>
       <p class="auth-sub" data-i18n="welcome_sub"></p>
@@ -413,8 +413,8 @@
 
 <nav class="tabbar" id="tabbar">
   <a href="#/regole" data-route="regole"><span class="t-ico">📜</span><span data-i18n="nav_rules">Regole</span></a>
-  <a href="#/brutta" data-route="brutta" class="gated"><span class="t-ico">✏️</span><span data-i18n="nav_rough">Brutta</span></a>
-  <a href="#/bella" data-route="bella" class="gated"><span class="t-ico">📖</span><span data-i18n="nav_fair">Bella</span></a>
+  <a href="#/brutta" data-route="brutta" class="gated"><span class="tab-badge" id="tabCountBrutta"></span><span class="t-ico">✏️</span><span data-i18n="nav_rough">Brutta</span></a>
+  <a href="#/bella" data-route="bella" class="gated"><span class="tab-badge" id="tabCountBella"></span><span class="t-ico">📖</span><span data-i18n="nav_fair">Bella</span></a>
   <a href="#/lettura" data-route="lettura" class="gated"><span class="t-ico">🌙</span><span data-i18n="nav_reading">Lettura</span></a>
   <a href="#/realizzati" data-route="realizzati" class="gated"><span class="t-ico">✅</span><span data-i18n="nav_done">Realizzati</span></a>
 </nav>

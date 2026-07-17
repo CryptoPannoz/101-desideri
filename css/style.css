@@ -55,6 +55,8 @@ body.lang-de .lang-block-inline[data-lang="de"] { display: inline; }
   color: var(--ink-soft); padding: 4px 9px; border-radius: 999px;
 }
 .lang-switch button.active { background: var(--card); color: var(--accent); box-shadow: 0 1px 4px rgba(90,70,150,.18); }
+.lang-switch-big { width: max-content; margin: 0 auto 20px; }
+.lang-switch-big button { font-size: .85rem; padding: 7px 14px; letter-spacing: 0; }
 
 /* ─── percorso: tab bloccate finché non leggi le regole ─── */
 body.locked .gated { display: none !important; }
@@ -354,6 +356,7 @@ main { flex: 1; width: 100%; max-width: 880px; margin: 0 auto; padding: 32px 20p
   justify-content: space-around;
 }
 .tabbar a {
+  position: relative;
   display: flex; flex-direction: column; align-items: center; gap: 1px;
   text-decoration: none; color: var(--ink-soft);
   font-size: .66rem; font-weight: 600; letter-spacing: .02em;
@@ -362,6 +365,14 @@ main { flex: 1; width: 100%; max-width: 880px; margin: 0 auto; padding: 32px 20p
 }
 .tabbar a .t-ico { font-size: 1.35rem; line-height: 1.2; }
 .tabbar a.active { color: var(--accent); background: var(--paper-deep); }
+.tab-badge {
+  position: absolute; top: 0; right: 6px;
+  background: linear-gradient(120deg, var(--accent), var(--dawn));
+  color: #fff; font-size: .58rem; font-weight: 700; line-height: 1.5;
+  border-radius: 999px; padding: 0 5px; min-width: 16px; text-align: center;
+  box-shadow: 0 1px 4px rgba(90,70,150,.35);
+}
+.tab-badge:empty { display: none; }
 
 /* ─── footer / toast ─── */
 .footer {
