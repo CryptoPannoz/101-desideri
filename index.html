@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>101 Desideri — la tecnica di Igor Sibaldi</title>
+<meta name="description" content="App per praticare la tecnica dei 101 desideri: quaderno di brutta, quaderno di bella e lettura quotidiana, con le regole di Igor Sibaldi.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="#/regole">✨ <span>101 Desideri</span></a>
+  <nav id="mainNav">
+    <a href="#/regole" data-route="regole">Le regole</a>
+    <a href="#/brutta" data-route="brutta">Brutta <span class="pill" id="navCountBrutta">0</span></a>
+    <a href="#/bella" data-route="bella">Bella <span class="pill" id="navCountBella">0</span></a>
+    <a href="#/lettura" data-route="lettura">Lettura</a>
+  </nav>
+  <button id="accountBtn" class="account-btn" title="Account">👤 <span id="accountLabel">Accedi</span></button>
+</header>
+
+<div id="syncBanner" class="sync-banner hidden"></div>
+
+<main id="app">
+
+  <!-- ══════════════ LE REGOLE ══════════════ -->
+  <section id="view-regole" class="view">
+    <div class="hero">
+      <p class="hero-kicker">La tecnica di Igor Sibaldi</p>
+      <h1>101 Desideri</h1>
+      <p class="hero-sub">Si comprano due quaderni: uno per la <strong>brutta</strong> e uno per la <strong>bella</strong>.
+      Sulla brutta scrivi <strong>150 desideri</strong> rispettando le regole. Poi ne scegli <strong>101</strong>,
+      li copi in bella, e li leggi <strong>una volta al giorno per 365 giorni</strong>. E vedi che succede.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#/brutta">Apri il quaderno di brutta ✏️</a>
+      </div>
+    </div>
+
+    <div class="rules-intro">
+      <h2>Perché «Io voglio» e non «io desidero»?</h2>
+      <p><em>Desiderare</em> viene da <em>de-sidera</em>: guardare le stelle e sentire che manca qualcosa.
+      È il contrario di <em>con-siderare</em>, cioè guardare come sono messe le stelle e adeguarsi.
+      Chi tratta il mondo come un supermercato <em>sceglie</em> tra quello che c'è sugli scaffali —
+      ma tu puoi desiderare tre cammelli, anche se all'Esselunga non li tengono.</p>
+      <p>Il <em>volere</em> invece è come un vento: arriva un paio di volte al giorno e chiede
+      <strong>«dove si va?»</strong>. La maggior parte delle persone non ha la risposta pronta, e il vento passa.
+      La tecnica dei 101 desideri serve a questo: <strong>preparare le risposte</strong>, chiare, precise e rapide,
+      per quando il volere arriva.</p>
+    </div>
+
+    <h2 class="rules-title">Le regole del quaderno</h2>
+    <div class="rules-grid">
+      <article class="rule-card"><div class="rule-num">1</div>
+        <h3>Comincia con «Io voglio»</h3>
+        <p>Ogni desiderio inizia con <strong>Io voglio</strong>. Non «desidererei», non «mi piacerebbe»,
+        non «sareste così gentili». Il volere vuole risposte dirette.</p></article>
+
+      <article class="rule-card"><div class="rule-num">2</div>
+        <h3>Mai la parola «non»</h3>
+        <p>Il volere <strong>non capisce le negazioni</strong>. «Io non voglio il raffreddore» → tempo un quarto d'ora…
+        Niente «non», «mai», «senza», «niente». Attenzione anche alle negazioni nascoste («incolume»).
+        Trasforma: «Io voglio stare perfettamente bene».</p></article>
+
+      <article class="rule-card"><div class="rule-num">3</div>
+        <h3>Massimo 14 parole</h3>
+        <p>Un desiderio deve stare in <strong>un'unica emissione di fiato</strong>: al massimo 14 parole,
+        compreso «Io voglio». <strong>Le virgole valgono come una parola.</strong></p></article>
+
+      <article class="rule-card rule-advice"><div class="rule-num">4</div>
+        <h3>Amore e sesso: niente nomi precisi <span class="tag">consiglio</span></h3>
+        <p>Non chiedere storie con persone precise: magari russano, magari il volere obbedisce e poi
+        conosci qualcuno di meglio. Chiedi <strong>il fatto</strong>: «Io voglio vivere bellissime storie d'amore». Punto.</p></article>
+
+      <article class="rule-card"><div class="rule-num">5</div>
+        <h3>Niente paragoni</h3>
+        <p>«Io voglio essere alto <em>come</em>…» — il volere non capisce, e rischi di ricevere anche
+        i problemi di quell'altro. Tu sei irripetibile: <strong>non desiderare quello che desiderano gli altri</strong>.</p></article>
+
+      <article class="rule-card"><div class="rule-num">6</div>
+        <h3>Niente desideri seriali</h3>
+        <p>«Appartamento a Berlino, a Londra, a Buenos Aires…» no. <strong>Ogni desiderio deve essere
+        originale</strong>, deve meravigliarti. È uno scavo interiore, non un catalogo.</p></article>
+
+      <article class="rule-card"><div class="rule-num">7</div>
+        <h3>Niente soldi</h3>
+        <p>I soldi sono astratti: perché un miliardo e non quattro? <strong>Chiedi la cosa, non la somma
+        per comprarla.</strong> Vuoi un castello? «Io voglio un castello» (o meglio: «Io voglio vedere
+        un castello dalle mie finestre»…).</p></article>
+
+      <article class="rule-card"><div class="rule-num">8</div>
+        <h3>Chiedi per te, non per gli altri</h3>
+        <p>Lo strumento è troppo forte: non sai se l'altro ha l'energia per reggere ciò che chiedi.
+        Trasforma: <strong>«Io voglio fare in modo che…»</strong> — tu sei il protagonista, l'altro resta libero.</p></article>
+
+      <article class="rule-card"><div class="rule-num">9</div>
+        <h3>Niente diminutivi</h3>
+        <p>«Casettina», «macchinina», «fidanzatino»… poi la realtà ti prende in parola.
+        <strong>Chiedi giusto:</strong> una casa in riva al mare, una macchina, un fidanzato.</p></article>
+
+      <article class="rule-card rule-advice"><div class="rule-num">+</div>
+        <h3>Sii preciso (e disobbedisci) <span class="tag">consigli</span></h3>
+        <p>Metti l'anno e i dettagli («una Jaguar del 2001, blu») sennò ti rifilano boiate.
+        E mettine anche di <strong>assurdi</strong>: sono quelli che si realizzano prima.
+        Non chiedere cose già realizzate: quelle le hai già.</p></article>
+    </div>
+
+    <div class="how-it-works">
+      <h2>Come funziona il percorso</h2>
+      <ol class="steps">
+        <li><strong>Quaderno di brutta</strong> — scrivi fino a <strong>150 desideri</strong>. Ci vuole tempo: le prime 9 vengono subito, poi si scava. Dopo il 50° scopri continenti interiori. Cancella, riscrivi, cresci.</li>
+        <li><strong>Quaderno di bella</strong> — dai 150 ne scegli <strong>101</strong>. Gli altri 49 restano di riserva: quando un desiderio si realizza (crocetta rossa ✗) ne subentra uno nuovo. Devono essere <strong>sempre 101</strong>.</li>
+        <li><strong>Lettura quotidiana</strong> — li leggi una volta al giorno, <strong>per conto tuo, senza dirlo a nessuno</strong>, per 365 giorni. Bastano 6 minuti. E vedi che succede.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ══════════════ QUADERNO DI BRUTTA ══════════════ -->
+  <section id="view-brutta" class="view hidden">
+    <div class="notebook-head">
+      <h1>✏️ Quaderno di brutta</h1>
+      <p class="notebook-sub">Qui si scava. Scrivi, cancella, riscrivi: l'obiettivo è arrivare a <strong>150</strong>.</p>
+      <div class="progressbar"><div class="progressbar-fill" id="progressBrutta"></div></div>
+      <p class="progress-label"><span id="countBrutta">0</span> / 150 desideri</p>
+    </div>
+
+    <form id="wishForm" class="wish-form" autocomplete="off">
+      <div class="wish-input-row">
+        <span class="io-voglio">Io voglio</span>
+        <input type="text" id="wishInput" placeholder="… (max 12 parole dopo «Io voglio»)" maxlength="200">
+      </div>
+      <div class="wish-meta">
+        <span id="wordCounter" class="word-counter">2 / 14 parole</span>
+        <button type="submit" class="btn btn-primary" id="wishSubmit">Aggiungi al quaderno</button>
+        <button type="button" class="btn btn-ghost hidden" id="wishCancelEdit">Annulla modifica</button>
+      </div>
+      <div id="wishFeedback" class="wish-feedback"></div>
+    </form>
+
+    <div id="milestoneBox" class="milestone hidden"></div>
+
+    <div class="list-tools">
+      <input type="search" id="searchBrutta" placeholder="Cerca tra i desideri…">
+      <label class="checkline"><input type="checkbox" id="hideInBella"> nascondi quelli già in bella</label>
+    </div>
+    <ol id="listBrutta" class="wish-list"></ol>
+    <p id="emptyBrutta" class="empty-note">Il quaderno è ancora bianco. Comincia: le prime nove vengono via lisce, verso la nona… bevi qualcosa. 🍷</p>
+  </section>
+
+  <!-- ══════════════ QUADERNO DI BELLA ══════════════ -->
+  <section id="view-bella" class="view hidden">
+    <div class="notebook-head">
+      <h1>📖 Quaderno di bella</h1>
+      <p class="notebook-sub">I <strong>101</strong> scelti. Quando uno si realizza, crocetta rossa ✗ e ne subentra uno dalla riserva: devono essere sempre 101.</p>
+      <div class="progressbar gold"><div class="progressbar-fill" id="progressBella"></div></div>
+      <p class="progress-label"><span id="countBella">0</span> / 101 attivi · <span id="countRealized">0</span> realizzati ✗ · riserva in brutta: <span id="countReserve">0</span></p>
+    </div>
+    <div id="bellaNotice" class="notice hidden"></div>
+    <ol id="listBella" class="wish-list bella"></ol>
+    <p id="emptyBella" class="empty-note">Ancora nessun desiderio in bella. Vai nel <a href="#/brutta">quaderno di brutta</a> e promuovi i migliori con ⭐.</p>
+  </section>
+
+  <!-- ══════════════ LETTURA QUOTIDIANA ══════════════ -->
+  <section id="view-lettura" class="view hidden">
+    <div class="notebook-head">
+      <h1>🌅 Lettura quotidiana</h1>
+      <p class="notebook-sub">Una volta al giorno, per conto tuo, senza farti sentire. Bastano 6 minuti.</p>
+      <div class="streak-row">
+        <div class="streak-box"><span class="streak-num" id="streakCurrent">0</span><span class="streak-label">giorni di fila</span></div>
+        <div class="streak-box"><span class="streak-num" id="streakTotal">0</span><span class="streak-label">letture su 365</span></div>
+        <div class="streak-box"><span class="streak-num" id="streakToday">—</span><span class="streak-label">oggi</span></div>
+      </div>
+    </div>
+    <div id="readingIntro" class="reading-intro">
+      <button id="startReading" class="btn btn-primary btn-big">Inizia la lettura di oggi 📖</button>
+      <p class="hint">Ti mostro i desideri uno alla volta, come sfogliare il quaderno.</p>
+    </div>
+    <div id="readingMode" class="reading-mode hidden">
+      <div class="reading-progress" id="readingProgress"></div>
+      <div class="reading-card" id="readingCard"></div>
+      <div class="reading-nav">
+        <button id="readPrev" class="btn btn-ghost">← indietro</button>
+        <button id="readNext" class="btn btn-primary">avanti →</button>
+      </div>
+      <button id="exitReading" class="btn btn-ghost btn-small">chiudi la lettura</button>
+    </div>
+    <div id="readingDone" class="reading-done hidden">
+      <h2>✨ Letti tutti.</h2>
+      <p>Lettura di oggi completata. Ora chiudi il quaderno e vai per la tua strada: al resto pensa il volere.</p>
+      <button id="backFromDone" class="btn btn-primary">Torna all'app</button>
+    </div>
+  </section>
+
+  <!-- ══════════════ ACCOUNT ══════════════ -->
+  <section id="view-account" class="view hidden">
+    <div class="auth-box" id="authBox">
+      <h1>Il tuo account</h1>
+      <p class="auth-sub">Con un account i tuoi quaderni sono salvati nel cloud e li ritrovi su ogni dispositivo. <strong>Nessuno può leggerli:</strong> sono solo tuoi.</p>
+
+      <div id="authLoggedOut">
+        <button id="googleLogin" class="btn btn-google">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C41.4 34.9 44 30 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
+          Continua con Google
+        </button>
+        <div class="auth-divider"><span>oppure con email</span></div>
+        <form id="emailForm" class="auth-form">
+          <input type="email" id="authEmail" placeholder="email" required autocomplete="email">
+          <input type="password" id="authPassword" placeholder="password (min 6 caratteri)" required minlength="6" autocomplete="current-password">
+          <div class="auth-actions">
+            <button type="submit" class="btn btn-primary" id="loginBtn">Entra</button>
+            <button type="button" class="btn btn-ghost" id="signupBtn">Crea un account</button>
+          </div>
+          <button type="button" class="linklike" id="resetPwd">Password dimenticata?</button>
+        </form>
+        <div id="authError" class="auth-error hidden"></div>
+        <div id="localModeNote" class="notice hidden">
+          ☁️ Il salvataggio cloud non è ancora configurato: per ora l'app funziona in <strong>modalità locale</strong>
+          (i dati restano su questo dispositivo). Vedi il README per attivare Firebase.
+        </div>
+      </div>
+
+      <div id="authLoggedIn" class="hidden">
+        <p class="logged-as">Sei dentro come <strong id="userEmail"></strong></p>
+        <p class="sync-status" id="syncStatus"></p>
+        <button id="logoutBtn" class="btn btn-ghost">Esci</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <p>Tecnica dei 101 desideri di <strong>Igor Sibaldi</strong> · fatta app con affetto ·
+  <em>«Mettetene anche di assurdi: sono quelli che si realizzano prima.»</em></p>
+</footer>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="js/firebase-config.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
