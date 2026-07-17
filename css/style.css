@@ -112,6 +112,16 @@ main { flex: 1; width: 100%; max-width: 880px; margin: 0 auto; padding: 32px 20p
   vertical-align: middle; font-family: var(--sans); font-weight: 600;
 }
 
+.video-section { margin-top: 44px; text-align: center; }
+.video-section h2 { font-size: 1.6rem; margin-bottom: 6px; }
+.video-caption { color: var(--ink-soft); font-size: .92rem; margin-bottom: 16px; }
+.video-box {
+  position: relative; aspect-ratio: 16 / 9; max-width: 720px; margin: 0 auto;
+  border-radius: var(--radius); overflow: hidden;
+  border: 1px solid var(--line); box-shadow: var(--shadow); background: #000;
+}
+.video-box iframe { position: absolute; inset: 0; width: 100%; height: 100%; }
+
 .how-it-works {
   margin-top: 44px; background: var(--card); border: 1px solid var(--line);
   border-radius: var(--radius); padding: 26px 28px; box-shadow: var(--shadow);
