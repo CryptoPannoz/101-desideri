@@ -9,14 +9,11 @@
 // 4. In Firestore crea il database e usa le regole del README.
 // Le chiavi firebaseConfig NON sono segrete: possono stare nel repo.
 
-window.FIREBASE_CONFIG = null;
-
-// Esempio:
-// window.FIREBASE_CONFIG = {
-//   apiKey: "AIza...",
-//   authDomain: "desideri-101.firebaseapp.com",
-//   projectId: "desideri-101",
-//   storageBucket: "desideri-101.appspot.com",
-//   messagingSenderId: "1234567890",
-//   appId: "1:1234567890:web:abcdef"
-// };
+window.FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCErhl1BlC8PgWjroo90k_kxbiMKvZKTsE",
+  authDomain: "desideri-101.firebaseapp.com",
+  projectId: "desideri-101",
+  storageBucket: "desideri-101.firebasestorage.app",
+  messagingSenderId: "123482361016",
+  appId: "1:123482361016:web:de5cf753b0e7fd021c784d"
+};
