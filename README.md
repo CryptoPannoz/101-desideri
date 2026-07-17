@@ -1,6 +1,6 @@
 # ✨ 101 Desideri
 
-Web app per praticare la **tecnica dei 101 desideri di Igor Sibaldi**: quaderno di brutta (150 desideri), quaderno di bella (i 101 scelti) e lettura quotidiana per 365 giorni — con la validazione automatica delle regole di Igor mentre scrivi.
+Web app **trilingue (IT · EN · DE)** per praticare la **tecnica dei 101 desideri di Igor Sibaldi**: quaderno di brutta (150 desideri), quaderno di bella (i 101 scelti) e lettura quotidiana per 365 giorni — con la validazione automatica delle regole di Igor mentre scrivi.
 
 **Demo / produzione:** https://cryptopannoz.github.io/101-desideri/
 
@@ -33,10 +33,19 @@ Gli **errori ⛔ bloccano** il salvataggio; gli **avvisi ⚠️** si possono sup
 
 L'app è pensata **prima di tutto per il telefono**: barra di navigazione in basso, lettura a schede con swipe, tap target grandi. È una **PWA installabile**: dal browser del telefono → "Aggiungi a schermata Home" e diventa un'app con la sua icona, che funziona **anche offline** (service worker `sw.js`; quando pubblichi modifiche, incrementa `CACHE` in `sw.js`).
 
+## Percorso UX
+
+1. **Benvenuto/login** (Google o email/password; link discreto «prova senza account» per la modalità locale)
+2. **Le regole** — finché non premi «Ho letto le regole» le altre sezioni restano nascoste
+3. **Brutta → Bella → Lettura → Realizzati** (spunta verde ✓ con data; i realizzati restano nella lettura quotidiana, come vuole la tecnica)
+
+## Lingue
+
+Interfaccia e **validatore** in italiano, inglese e tedesco (selettore IT/EN/DE in alto). Ogni lingua ha le sue liste: negazioni, soldi, paragoni, diminutivi («casettina» / “little house” / „Häuslein“). UI: stringhe in `js/i18n.js`; le pagine di prosa (regole) sono blocchi `.lang-block` in `index.html`.
+
 ## Dati e account
 
-L'app funziona **subito in modalità locale** (localStorage, dati solo sul dispositivo).
-In **Account → I tuoi dati** si può scaricare un **backup JSON** dei quaderni e ripristinarlo su qualsiasi dispositivo (utile anche per passare i dati da telefono a computer senza cloud).
+L'app salva in localStorage e, con login, sincronizza su Firestore (vince il più recente).
 Con Firebase configurato si sbloccano **login con Google**, **email/password** e il **salvataggio cloud** (i quaderni ti seguono su ogni dispositivo).
 
 ### Attivare Firebase (una volta sola, ~10 minuti)

@@ -1,7 +1,7 @@
 // ── Service worker: app shell offline-ready ─────────────────────
 // Strategia: rete prima (per avere sempre l'ultima versione),
 // cache come rete di sicurezza quando sei offline (in bagno senza campo…).
-const CACHE = "desideri101-v2";
+const CACHE = "desideri101-v3";
 const SHELL = [
   ".",
   "index.html",

@@ -1,17 +1,21 @@
 // ── 101 Desideri — app principale ────────────────────────────────
 import { validate, countWords } from "./validator.js";
+import { t, lang, setLang, applyI18n, LANGS, PREFIX, PREFIX_RE } from "./i18n.js";
 
 const STORAGE_KEY = "desideri101.v1";
+const RULES_KEY = "desideri101.rulesRead";
+const SKIP_KEY = "desideri101.skipLogin";
 const MAX_BRUTTA = 150;
 const MAX_BELLA = 101;
 const GOAL_DAYS = 365;
 
 // ── stato ──
 let state = load();
-let editingId = null;         // desiderio in modifica
-let pendingConfirm = false;   // "salva comunque" dopo i warning
+let editingId = null;
+let pendingConfirm = false;
 let reading = { list: [], idx: 0 };
-let fb = null;                // { auth, db, user, ... } se Firebase attivo
+let fb = null;                 // Firebase attivo
+let authResolved = false;      // primo onAuthStateChanged ricevuto
 
 function load() {
   try {
@@ -20,7 +24,6 @@ function load() {
   } catch (e) { /* dati corrotti: si riparte */ }
   return { wishes: [], readings: [], updatedAt: 0 };
 }
-
 function persist() {
   state.updatedAt = Date.now();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -31,154 +34,193 @@ function persist() {
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const $ = (id) => document.getElementById(id);
+const rulesRead = () => localStorage.getItem(RULES_KEY) === "1";
+const skippedLogin = () => sessionStorage.getItem(SKIP_KEY) === "1";
 
 function esc(s) {
   return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
-
 function toast(msg, ms = 2600) {
-  const t = $("toast");
-  t.textContent = msg;
-  t.classList.remove("hidden");
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.add("hidden"), ms);
+  const el = $("toast");
+  el.textContent = msg;
+  el.classList.remove("hidden");
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => el.classList.add("hidden"), ms);
+}
+
+// ── percorso UX: login → regole → quaderni ──
+function needsLogin() {
+  if (!window.FIREBASE_CONFIG) return false;          // modalità locale pura
+  if (skippedLogin()) return false;
+  if (!authResolved) return true;                      // in attesa: resta sul benvenuto
+  return !(fb && fb.user);
+}
+function updateGates() {
+  document.body.classList.toggle("locked", !rulesRead());
+  document.body.classList.toggle("welcome-mode", needsLogin());
+  const first = !rulesRead();
+  $("rulesCta").textContent = first ? t("rules_cta_first") : t("rules_cta");
 }
 
 // ── routing ──
-const ROUTES = ["regole", "brutta", "bella", "lettura", "account"];
+const ROUTES = ["benvenuto", "regole", "brutta", "bella", "realizzati", "lettura"];
+const GATED = ["brutta", "bella", "realizzati", "lettura"];
 function route() {
-  const r = (location.hash.replace("#/", "") || "regole").split("?")[0];
-  const view = ROUTES.includes(r) ? r : "regole";
-  ROUTES.forEach(v => $("view-" + v).classList.toggle("hidden", v !== view));
+  let r = (location.hash.replace("#/", "") || "regole").split("?")[0];
+  if (!ROUTES.includes(r)) r = "regole";
+  if (needsLogin()) r = "benvenuto";
+  else if (r === "benvenuto") r = "regole";
+  else if (GATED.includes(r) && !rulesRead()) r = "regole";
+  ROUTES.forEach(v => $("view-" + v).classList.toggle("hidden", v !== r));
   document.querySelectorAll("#mainNav a, .tabbar a").forEach(a =>
-    a.classList.toggle("active", a.dataset.route === view));
-  if (view !== "lettura") exitReadingMode();
+    a.classList.toggle("active", a.dataset.route === r));
+  if (r !== "lettura") exitReadingMode();
   window.scrollTo({ top: 0 });
 }
 window.addEventListener("hashchange", route);
 
-// ── rendering ──
-function bellaWishes() {
-  return state.wishes.filter(w => w.inBella).sort((a, b) => (a.bellaOrder ?? 0) - (b.bellaOrder ?? 0));
+// ── lingua ──
+function refreshLangUI() {
+  document.querySelectorAll("#langSwitch button").forEach(b =>
+    b.classList.toggle("active", b.dataset.lang === lang));
+  applyI18n();
+  updateGates();
+  renderAll();
 }
+$("langSwitch").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-lang]");
+  if (!b) return;
+  setLang(b.dataset.lang);
+  refreshLangUI();
+  liveValidate();
+});
+
+// ── rendering ──
+const bellaWishes = () =>
+  state.wishes.filter(w => w.inBella).sort((a, b) => (a.bellaOrder ?? 0) - (b.bellaOrder ?? 0));
+const doneWishes = () =>
+  state.wishes.filter(w => w.realized).sort((a, b) => (b.realizedAt ?? 0) - (a.realizedAt ?? 0));
 
 function renderAll() {
   renderCounters();
   renderBrutta();
   renderBella();
+  renderDone();
   renderLettura();
-  renderDataInfo();
+  renderAuthUI();
 }
 
 function renderCounters() {
   const nBrutta = state.wishes.length;
-  const bella = bellaWishes();
-  const active = bella.filter(w => !w.realized).length;
+  const active = bellaWishes().filter(w => !w.realized).length;
   $("navCountBrutta").textContent = nBrutta;
   $("navCountBella").textContent = active;
-  $("countBrutta").textContent = nBrutta;
+  $("navCountDone").textContent = doneWishes().length;
   $("progressBrutta").style.width = Math.min(100, nBrutta / MAX_BRUTTA * 100) + "%";
-  $("countBella").textContent = active;
-  $("countRealized").textContent = bella.filter(w => w.realized).length;
-  $("countReserve").textContent = state.wishes.filter(w => !w.inBella).length;
+  $("labelBrutta").textContent = t("rough_count", { n: nBrutta });
   $("progressBella").style.width = Math.min(100, active / MAX_BELLA * 100) + "%";
+  $("labelBella").textContent = t("fair_count", { n: active, r: state.wishes.filter(w => !w.inBella).length });
 }
 
 function wishHTML(w) {
-  const rest = esc(w.text.replace(/^io voglio\s*/i, ""));
-  return `<span class="iv">Io voglio</span> ${rest}`;
+  const m = w.text.match(PREFIX_RE);
+  const pfx = m ? m[0].trim() : PREFIX[lang];
+  const rest = esc(w.text.replace(PREFIX_RE, ""));
+  return `<span class="iv">${esc(pfx)}</span> ${rest}`;
 }
 
 function renderBrutta() {
   const q = ($("searchBrutta").value || "").toLowerCase();
   const hideBella = $("hideInBella").checked;
-  const list = $("listBrutta");
   const items = state.wishes
     .filter(w => !q || w.text.toLowerCase().includes(q))
     .filter(w => !hideBella || !w.inBella);
-  list.innerHTML = items.map((w, i) => `
+  $("listBrutta").innerHTML = items.map(w => `
     <li class="wish-item ${w.realized ? "realized" : ""}" data-id="${w.id}">
       <span class="num">${state.wishes.indexOf(w) + 1}.</span>
-      <span class="text">${wishHTML(w)}</span>
-      ${w.inBella ? '<span class="badge-bella">in bella ✒️</span>' : ""}
+      <span class="text">${wishHTML(w)}${w.realized ? ' <span class="check">✓</span>' : ""}</span>
+      ${w.inBella ? `<span class="badge-bella">${t("badge_fair")}</span>` : ""}
       <span class="wish-actions">
-        <button class="icon-btn" data-act="star" title="${w.inBella ? "Togli dalla bella" : "Promuovi in bella"}">${w.inBella ? "⭐" : "☆"}</button>
-        <button class="icon-btn" data-act="edit" title="Modifica">✏️</button>
-        <button class="icon-btn" data-act="del" title="Elimina">🗑</button>
+        <button class="icon-btn" data-act="star" title="${w.inBella ? t("act_demote") : t("act_promote")}">${w.inBella ? "⭐" : "☆"}</button>
+        <button class="icon-btn" data-act="edit" title="${t("act_edit")}">✏️</button>
+        <button class="icon-btn" data-act="del" title="${t("act_del")}">🗑</button>
       </span>
     </li>`).join("");
   $("emptyBrutta").classList.toggle("hidden", state.wishes.length > 0);
   renderMilestone();
 }
 
-const MILESTONES = {
-  9: "🍷 Nove desideri! Verso il nono… bevi qualcosa: hai appena sistemato questa vita e anche quella dopo. Ne mancano solo 141.",
-  30: "⛏️ Trenta! «Ma non è possibile…» E invece sì. Da qui comincia lo scavo vero.",
-  50: "🌍 Cinquanta! Da qui in poi scopri continenti interiori: America, Australia, Polinesia. E rileggi i primi 15: quanto sei cresciuto in queste settimane?",
-  101: "✨ Centouno! Potresti già scegliere, ma Igor dice: arriva a 150. I 49 in più saranno la tua riserva.",
-  150: "🏆 CENTOCINQUANTA! Quaderno di brutta completo. Ora la parte più noiosa (e magica): scegli i 101 con la stellina ⭐ e passali in bella."
-};
+const MILESTONE_KEYS = { 9: "m9", 30: "m30", 50: "m50", 101: "m101", 150: "m150" };
 function renderMilestone() {
   const n = state.wishes.length;
-  const keys = Object.keys(MILESTONES).map(Number).filter(k => k <= n);
+  const keys = Object.keys(MILESTONE_KEYS).map(Number).filter(k => k <= n);
   const last = keys[keys.length - 1];
   const box = $("milestoneBox");
-  if (last && n - last < 4) {   // mostra il traguardo per un po'
-    box.textContent = MILESTONES[last];
+  if (last && n - last < 4) {
+    box.textContent = t(MILESTONE_KEYS[last]);
     box.classList.remove("hidden");
-  } else {
-    box.classList.add("hidden");
-  }
+  } else box.classList.add("hidden");
 }
 
 function renderBella() {
-  const bella = bellaWishes();
-  const active = bella.filter(w => !w.realized).length;
+  const activeList = bellaWishes().filter(w => !w.realized);
   const notice = $("bellaNotice");
-  if (bella.length === 0) {
-    notice.classList.add("hidden");
-  } else if (active < MAX_BELLA) {
-    notice.textContent = `Ne hai ${active} attivi: per l'esercizio completo devono essere sempre 101. ${state.wishes.filter(w => !w.inBella).length > 0 ? "Promuovi dalla riserva in brutta ⭐" : "Scrivi ancora in brutta ✏️"}`;
+  if (bellaWishes().length === 0) notice.classList.add("hidden");
+  else {
     notice.classList.remove("hidden");
-  } else if (active > MAX_BELLA) {
-    notice.textContent = `Sono ${active}: uno di troppo… la bella ne vuole esattamente 101. Riporta qualcuno in brutta ↩️`;
-    notice.classList.remove("hidden");
-  } else {
-    notice.textContent = "✒️ 101 esatti. Ora: lettura una volta al giorno, per conto tuo, senza dirlo a nessuno.";
-    notice.classList.remove("hidden");
+    const reserve = state.wishes.filter(w => !w.inBella).length;
+    if (activeList.length < MAX_BELLA)
+      notice.textContent = t(reserve > 0 ? "fair_low" : "fair_low_empty", { n: activeList.length });
+    else notice.textContent = t("fair_exact");
   }
-  $("listBella").innerHTML = bella.map((w, i) => `
-    <li class="wish-item ${w.realized ? "realized" : ""}" data-id="${w.id}">
+  $("listBella").innerHTML = activeList.map((w, i) => `
+    <li class="wish-item" data-id="${w.id}">
       <span class="num">${i + 1}.</span>
       <span class="text">${wishHTML(w)}</span>
-      ${w.realized ? '<span class="cross">✗ realizzato</span>' : ""}
       <span class="wish-actions">
-        <button class="icon-btn" data-act="realize" title="${w.realized ? "Riattiva" : "Crocetta rossa: realizzato!"}">${w.realized ? "↺" : "✗"}</button>
-        <button class="icon-btn" data-act="unstar" title="Riporta in brutta">↩️</button>
+        <button class="icon-btn" data-act="realize" title="${t("act_done")}">✓</button>
+        <button class="icon-btn" data-act="edit" title="${t("act_edit")}">✏️</button>
+        <button class="icon-btn" data-act="unstar" title="${t("act_back")}">↩️</button>
       </span>
     </li>`).join("");
-  $("emptyBella").classList.toggle("hidden", bella.length > 0);
+  $("emptyBella").classList.toggle("hidden", bellaWishes().length > 0);
 }
 
-// ── form desiderio (brutta) ──
+function renderDone() {
+  const done = doneWishes();
+  $("doneCounter").textContent = done.length ? t("done_count", { n: done.length }) : "";
+  const locales = { it: "it-IT", en: "en-GB", de: "de-DE" };
+  $("listDone").innerHTML = done.map(w => `
+    <li class="wish-item" data-id="${w.id}">
+      <span class="check-big">✓</span>
+      <span class="text">${wishHTML(w)}
+        ${w.realizedAt ? `<span class="done-date">${t("done_on", { d: new Date(w.realizedAt).toLocaleDateString(locales[lang]) })}</span>` : ""}
+      </span>
+      <span class="wish-actions">
+        <button class="icon-btn" data-act="realize" title="${t("act_undone")}">↺</button>
+      </span>
+    </li>`).join("");
+  $("emptyDone").classList.toggle("hidden", done.length > 0);
+}
+
+// ── form desiderio ──
 const wishInput = $("wishInput");
 const feedback = $("wishFeedback");
 
 function liveValidate() {
-  const rest = wishInput.value;
-  const res = validate(rest, state.wishes, editingId);
+  const res = validate(wishInput.value, state.wishes, editingId, PREFIX[lang]);
   const counter = $("wordCounter");
-  counter.textContent = `${res.wordCount} / 14 parole`;
+  counter.textContent = t("words_count", { n: res.wordCount });
   counter.classList.toggle("over", res.wordCount > 14);
   feedback.innerHTML =
-    res.errors.map(e => `<div class="fb fb-error">⛔ ${esc(e)}</div>`).join("") +
-    res.warnings.map(w => `<div class="fb fb-warn">⚠️ ${esc(w)}</div>`).join("") +
-    res.advice.map(a => `<div class="fb fb-ok">💡 ${esc(a)}</div>`).join("");
+    res.errors.map(x => `<div class="fb fb-error">⛔ ${esc(x)}</div>`).join("") +
+    res.warnings.map(x => `<div class="fb fb-warn">⚠️ ${esc(x)}</div>`).join("") +
+    res.advice.map(x => `<div class="fb fb-ok">💡 ${esc(x)}</div>`).join("");
   return res;
 }
 wishInput.addEventListener("input", () => {
   pendingConfirm = false;
-  $("wishSubmit").textContent = editingId ? "Salva la modifica" : "Aggiungi al quaderno";
+  $("wishSubmit").textContent = editingId ? t("btn_save") : t("btn_add");
   liveValidate();
 });
 
@@ -186,38 +228,39 @@ $("wishForm").addEventListener("submit", (e) => {
   e.preventDefault();
   const rest = wishInput.value.trim().replace(/\.+$/, "");
   if (!rest) { wishInput.focus(); return; }
-  const res = validate(rest, state.wishes, editingId);
-  if (res.errors.length) { liveValidate(); toast("Ci sono regole da sistemare ⛔"); return; }
+  const res = validate(rest, state.wishes, editingId, PREFIX[lang]);
+  if (res.errors.length) { liveValidate(); toast(t("t_fix")); return; }
   if (res.warnings.length && !pendingConfirm) {
     liveValidate();
     pendingConfirm = true;
-    $("wishSubmit").textContent = "Va bene così, salva comunque";
+    $("wishSubmit").textContent = t("btn_save_anyway");
     return;
   }
-  const text = "Io voglio " + rest;
+  const text = PREFIX[lang] + " " + rest;
   if (editingId) {
-    const w = state.wishes.find(w => w.id === editingId);
+    const w = state.wishes.find(x => x.id === editingId);
     if (w) { w.text = text; w.updatedAt = Date.now(); }
-    toast("Desiderio riscritto ✏️");
+    toast(t("t_edited"));
     stopEditing();
   } else {
-    if (state.wishes.length >= MAX_BRUTTA) { toast("Hai già 150 desideri: il quaderno di brutta è pieno!"); return; }
-    state.wishes.push({ id: uid(), text, inBella: false, bellaOrder: null, realized: false, createdAt: Date.now(), updatedAt: Date.now() });
-    toast("Scritto nel quaderno ✨");
+    if (state.wishes.length >= MAX_BRUTTA) { toast(t("t_rough_full")); return; }
+    state.wishes.push({ id: uid(), text, inBella: false, bellaOrder: null, realized: false, realizedAt: null, createdAt: Date.now(), updatedAt: Date.now() });
+    toast(t("t_added"));
   }
   wishInput.value = "";
   pendingConfirm = false;
   feedback.innerHTML = "";
-  $("wordCounter").textContent = "2 / 14 parole";
-  $("wordCounter").classList.remove("over");
   persist();
+  $("wishSubmit").textContent = t("btn_add");
+  $("wordCounter").textContent = t("words_count", { n: 2 });
+  $("wordCounter").classList.remove("over");
   wishInput.focus();
 });
 
 function startEditing(w) {
   editingId = w.id;
-  wishInput.value = w.text.replace(/^io voglio\s*/i, "");
-  $("wishSubmit").textContent = "Salva la modifica";
+  wishInput.value = w.text.replace(PREFIX_RE, "");
+  $("wishSubmit").textContent = t("btn_save");
   $("wishCancelEdit").classList.remove("hidden");
   liveValidate();
   location.hash = "#/brutta";
@@ -226,7 +269,7 @@ function startEditing(w) {
 }
 function stopEditing() {
   editingId = null;
-  $("wishSubmit").textContent = "Aggiungi al quaderno";
+  $("wishSubmit").textContent = t("btn_add");
   $("wishCancelEdit").classList.add("hidden");
 }
 $("wishCancelEdit").addEventListener("click", () => {
@@ -236,67 +279,74 @@ $("wishCancelEdit").addEventListener("click", () => {
 $("searchBrutta").addEventListener("input", renderBrutta);
 $("hideInBella").addEventListener("change", renderBrutta);
 
-// azioni sulle liste (event delegation)
-$("listBrutta").addEventListener("click", onListClick);
-$("listBella").addEventListener("click", onListClick);
+// azioni sulle liste
+["listBrutta", "listBella", "listDone"].forEach(id => $(id).addEventListener("click", onListClick));
 function onListClick(e) {
   const btn = e.target.closest("button[data-act]");
   if (!btn) return;
   const id = btn.closest(".wish-item").dataset.id;
-  const w = state.wishes.find(w => w.id === id);
+  const w = state.wishes.find(x => x.id === id);
   if (!w) return;
   const act = btn.dataset.act;
 
   if (act === "star") {
-    const activeBella = bellaWishes().filter(x => !x.realized).length;
-    if (activeBella >= MAX_BELLA) { toast("La bella è piena: 101 esatti. Prima liberane uno."); return; }
-    w.inBella = true;
-    w.bellaOrder = Math.max(0, ...bellaWishes().map(x => x.bellaOrder ?? 0)) + 1;
-    toast("Promosso in bella ✒️");
+    if (w.inBella) {
+      w.inBella = false; w.bellaOrder = null; w.realized = false; w.realizedAt = null;
+      toast(t("t_demoted"));
+    } else {
+      const active = bellaWishes().filter(x => !x.realized).length;
+      if (active >= MAX_BELLA) { toast(t("t_fair_full")); return; }
+      w.inBella = true;
+      w.bellaOrder = Math.max(0, ...bellaWishes().map(x => x.bellaOrder ?? 0)) + 1;
+      toast(t("t_promoted"));
+    }
   }
-  if (act === "unstar") { w.inBella = false; w.bellaOrder = null; w.realized = false; toast("Riportato in brutta"); }
+  if (act === "unstar") { w.inBella = false; w.bellaOrder = null; w.realized = false; w.realizedAt = null; toast(t("t_demoted")); }
   if (act === "edit") { startEditing(w); return; }
   if (act === "del") {
-    if (!confirm("Cancellare questo desiderio?\n\n« " + w.text + " »")) return;
+    if (!confirm(t("confirm_del") + "\n\n« " + w.text + " »")) return;
     state.wishes = state.wishes.filter(x => x.id !== id);
     if (editingId === id) { wishInput.value = ""; stopEditing(); }
-    toast("Cancellato 🗑");
+    toast(t("t_deleted"));
   }
   if (act === "realize") {
     w.realized = !w.realized;
+    w.realizedAt = w.realized ? Date.now() : null;
     if (w.realized) {
       const reserve = state.wishes.filter(x => !x.inBella).length;
-      toast(reserve > 0
-        ? "✗ Crocetta rossa! Ora promuovi uno dei " + reserve + " di riserva: sempre 101."
-        : "✗ Crocetta rossa! La riserva è vuota: scrivine di nuovi in brutta.", 4200);
+      toast(reserve > 0 ? t("t_done", { r: reserve }) : t("t_done_noreserve"), 4200);
     }
   }
   persist();
 }
 
+// ── regole → sblocco quaderni ──
+$("rulesCta").addEventListener("click", () => {
+  localStorage.setItem(RULES_KEY, "1");
+  updateGates();
+  location.hash = "#/brutta";
+});
+
 // ── lettura quotidiana ──
 function renderLettura() {
-  const days = state.readings;
-  $("streakTotal").textContent = Math.min(days.length, GOAL_DAYS);
+  $("streakTotal").textContent = Math.min(state.readings.length, GOAL_DAYS);
   $("streakCurrent").textContent = currentStreak();
-  const done = days.includes(todayStr());
+  const done = state.readings.includes(todayStr());
   $("streakToday").textContent = done ? "✓" : "—";
-  $("startReading").textContent = done ? "Rileggi (oggi l'hai già fatto ✓)" : "Inizia la lettura di oggi 📖";
+  $("startReading").textContent = done ? t("btn_reread") : t("btn_start_reading");
 }
 function currentStreak() {
   const set = new Set(state.readings);
   let streak = 0;
   const d = new Date();
-  if (!set.has(todayStr())) d.setDate(d.getDate() - 1); // la serie può continuare oggi
+  if (!set.has(todayStr())) d.setDate(d.getDate() - 1);
   while (set.has(d.toISOString().slice(0, 10))) { streak++; d.setDate(d.getDate() - 1); }
   return streak;
 }
 
 $("startReading").addEventListener("click", () => {
-  reading.list = bellaWishes();
-  if (reading.list.length === 0) {
-    toast("La bella è vuota: prima scegli i desideri ⭐"); return;
-  }
+  reading.list = bellaWishes();               // realizzati compresi: fa parte della tecnica
+  if (reading.list.length === 0) { toast(t("t_empty_fair")); return; }
   reading.idx = 0;
   $("readingIntro").classList.add("hidden");
   $("readingDone").classList.add("hidden");
@@ -305,15 +355,14 @@ $("startReading").addEventListener("click", () => {
 });
 function showReadingCard() {
   const w = reading.list[reading.idx];
-  $("readingProgress").textContent = `${reading.idx + 1} di ${reading.list.length}`;
-  $("readingCard").innerHTML = "<div>" + wishHTML(w) + (w.realized ? ' <span class="cross">✗</span>' : "") + "</div>";
+  $("readingProgress").textContent = t("reading_progress", { i: reading.idx + 1, n: reading.list.length });
+  $("readingCard").innerHTML = "<div>" + wishHTML(w) + (w.realized ? ' <span class="check">✓</span>' : "") + "</div>";
   $("readPrev").disabled = reading.idx === 0;
-  $("readNext").textContent = reading.idx === reading.list.length - 1 ? "Fine ✨" : "avanti →";
+  $("readNext").textContent = reading.idx === reading.list.length - 1 ? t("btn_fin") : t("btn_next");
 }
 $("readPrev").addEventListener("click", () => { if (reading.idx > 0) { reading.idx--; showReadingCard(); } });
 $("readNext").addEventListener("click", () => {
   if (reading.idx < reading.list.length - 1) { reading.idx++; showReadingCard(); return; }
-  // finita la lettura di oggi
   if (!state.readings.includes(todayStr())) state.readings.push(todayStr());
   $("readingMode").classList.add("hidden");
   $("readingDone").classList.remove("hidden");
@@ -324,7 +373,6 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "ArrowRight" || e.key === " ") $("readNext").click();
   if (e.key === "ArrowLeft") $("readPrev").click();
 });
-// swipe sul telefono per sfogliare
 let touchX = null;
 $("readingCard").addEventListener("touchstart", (e) => { touchX = e.touches[0].clientX; }, { passive: true });
 $("readingCard").addEventListener("touchend", (e) => {
@@ -334,7 +382,6 @@ $("readingCard").addEventListener("touchend", (e) => {
   if (Math.abs(dx) < 45) return;
   dx < 0 ? $("readNext").click() : $("readPrev").click();
 }, { passive: true });
-
 $("exitReading").addEventListener("click", exitReadingMode);
 $("backFromDone").addEventListener("click", () => { location.hash = "#/lettura"; exitReadingMode(); });
 function exitReadingMode() {
@@ -343,33 +390,38 @@ function exitReadingMode() {
   $("readingIntro").classList.remove("hidden");
 }
 
-// ── account / Firebase ──
-$("accountBtn").addEventListener("click", () => { location.hash = "#/account"; });
-
-const AUTH_ERRORS = {
-  "auth/invalid-email": "L'email non sembra valida.",
-  "auth/user-not-found": "Nessun account con questa email: prova «Crea un account».",
-  "auth/wrong-password": "Password sbagliata.",
-  "auth/invalid-credential": "Email o password sbagliate.",
-  "auth/email-already-in-use": "C'è già un account con questa email: usa «Entra».",
-  "auth/weak-password": "Password troppo corta: minimo 6 caratteri.",
-  "auth/popup-closed-by-user": "Login annullato.",
-  "auth/network-request-failed": "Problema di rete: riprova."
+// ── Firebase / autenticazione ──
+const AUTH_ERR_KEY = {
+  "auth/invalid-email": "e_invalid_email",
+  "auth/user-not-found": "e_user_not_found",
+  "auth/wrong-password": "e_wrong",
+  "auth/invalid-credential": "e_wrong",
+  "auth/email-already-in-use": "e_inuse",
+  "auth/weak-password": "e_weak",
+  "auth/popup-closed-by-user": "e_popup",
+  "auth/cancelled-popup-request": "e_popup",
+  "auth/network-request-failed": "e_net"
 };
 function authError(e) {
   const box = $("authError");
-  box.textContent = AUTH_ERRORS[e.code] || ("Errore: " + (e.message || e));
+  box.textContent = AUTH_ERR_KEY[e.code] ? t(AUTH_ERR_KEY[e.code]) : t("e_generic", { m: e.message || e });
   box.classList.remove("hidden");
 }
 
+function renderAuthUI() {
+  const logged = fb && fb.user;
+  $("profileChip").classList.toggle("hidden", !logged);
+  if (logged) $("profileName").textContent = (fb.user.displayName || fb.user.email).split(" ")[0].split("@")[0];
+  const banner = $("syncBanner");
+  if (!window.FIREBASE_CONFIG) { banner.textContent = t("banner_local"); banner.classList.remove("hidden"); }
+  else if (authResolved && !logged) { banner.textContent = t("banner_loggedout"); banner.classList.remove("hidden"); }
+  else banner.classList.add("hidden");
+}
+
 async function initFirebase() {
-  if (!window.FIREBASE_CONFIG) {
-    $("localModeNote").classList.remove("hidden");
-    $("syncBanner").textContent = "📓 Modalità locale: i quaderni sono salvati solo su questo dispositivo.";
-    $("syncBanner").classList.remove("hidden");
-    $("googleLogin").disabled = true;
-    return;
-  }
+  if (!window.FIREBASE_CONFIG) { authResolved = true; updateGates(); route(); renderAuthUI(); return; }
+  $("authLoading").classList.remove("hidden");
+  $("authForms").classList.add("hidden");
   try {
     const [{ initializeApp }, authMod, fsMod] = await Promise.all([
       import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"),
@@ -377,40 +429,29 @@ async function initFirebase() {
       import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js")
     ]);
     const app = initializeApp(window.FIREBASE_CONFIG);
-    fb = {
-      auth: authMod.getAuth(app),
-      db: fsMod.getFirestore(app),
-      authMod, fsMod, user: null
-    };
+    fb = { auth: authMod.getAuth(app), db: fsMod.getFirestore(app), authMod, fsMod, user: null };
     authMod.onAuthStateChanged(fb.auth, async (user) => {
+      const firstResolve = !authResolved;
+      const wasLoggedOut = !fb.user;
+      authResolved = true;
       fb.user = user;
-      renderAuth();
-      if (user) await cloudFirstSync();
+      $("authLoading").classList.add("hidden");
+      $("authForms").classList.remove("hidden");
+      updateGates(); route(); renderAuthUI();
+      if (user) {
+        await cloudFirstSync();
+        if (!firstResolve && wasLoggedOut) location.hash = rulesRead() ? "#/brutta" : "#/regole";
+      }
     });
   } catch (e) {
     console.error("Firebase init fallita:", e);
-    $("syncBanner").textContent = "⚠️ Cloud non raggiungibile: modalità locale.";
+    authResolved = true;
+    $("syncBanner").textContent = t("banner_offline");
     $("syncBanner").classList.remove("hidden");
+    updateGates(); route();
   }
 }
 
-function renderAuth() {
-  const logged = fb && fb.user;
-  $("authLoggedOut").classList.toggle("hidden", !!logged);
-  $("authLoggedIn").classList.toggle("hidden", !logged);
-  $("authError").classList.add("hidden");
-  $("accountLabel").textContent = logged ? (fb.user.displayName || fb.user.email).split(" ")[0].split("@")[0] : "Accedi";
-  if (logged) {
-    $("userEmail").textContent = fb.user.email;
-    $("syncStatus").textContent = "☁️ Quaderni sincronizzati nel cloud.";
-    $("syncBanner").classList.add("hidden");
-  } else if (fb) {
-    $("syncBanner").textContent = "📓 Non sei collegato: i quaderni restano su questo dispositivo. Accedi per salvarli nel cloud.";
-    $("syncBanner").classList.remove("hidden");
-  }
-}
-
-// primo sync dopo il login: vince il più recente
 async function cloudFirstSync() {
   try {
     const { doc, getDoc } = fb.fsMod;
@@ -421,7 +462,7 @@ async function cloudFirstSync() {
         state = { wishes: cloud.wishes || [], readings: cloud.readings || [], updatedAt: cloud.updatedAt };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         renderAll();
-        toast("☁️ Quaderni scaricati dal cloud");
+        toast(t("t_synced"));
         return;
       }
     }
@@ -445,75 +486,55 @@ function cloudSave(now = false) {
 
 $("googleLogin").addEventListener("click", async () => {
   if (!fb) return;
-  try {
-    await fb.authMod.signInWithPopup(fb.auth, new fb.authMod.GoogleAuthProvider());
-  } catch (e) { authError(e); }
+  try { await fb.authMod.signInWithPopup(fb.auth, new fb.authMod.GoogleAuthProvider()); }
+  catch (e) { authError(e); }
 });
 $("emailForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (!fb) { authError({ message: "Cloud non configurato (vedi README)." }); return; }
-  try {
-    await fb.authMod.signInWithEmailAndPassword(fb.auth, $("authEmail").value, $("authPassword").value);
-  } catch (err) { authError(err); }
+  if (!fb) return;
+  try { await fb.authMod.signInWithEmailAndPassword(fb.auth, $("authEmail").value, $("authPassword").value); }
+  catch (err) { authError(err); }
 });
 $("signupBtn").addEventListener("click", async () => {
-  if (!fb) { authError({ message: "Cloud non configurato (vedi README)." }); return; }
-  if (!$("authEmail").value || $("authPassword").value.length < 6) {
-    authError({ code: "auth/weak-password" }); return;
-  }
+  if (!fb) return;
+  if (!$("authEmail").value || $("authPassword").value.length < 6) { authError({ code: "auth/weak-password" }); return; }
   try {
     await fb.authMod.createUserWithEmailAndPassword(fb.auth, $("authEmail").value, $("authPassword").value);
-    toast("Account creato ✨ Benvenuto!");
+    toast(t("t_signup_ok"));
   } catch (err) { authError(err); }
 });
 $("resetPwd").addEventListener("click", async () => {
   if (!fb) return;
   if (!$("authEmail").value) { authError({ code: "auth/invalid-email" }); return; }
-  try {
-    await fb.authMod.sendPasswordResetEmail(fb.auth, $("authEmail").value);
-    toast("Email di recupero inviata 📧");
-  } catch (err) { authError(err); }
+  try { await fb.authMod.sendPasswordResetEmail(fb.auth, $("authEmail").value); toast(t("t_reset_sent")); }
+  catch (err) { authError(err); }
 });
-$("logoutBtn").addEventListener("click", async () => {
+$("skipLogin").addEventListener("click", () => {
+  sessionStorage.setItem(SKIP_KEY, "1");
+  updateGates(); route(); renderAuthUI();
+});
+$("profileChip").addEventListener("click", async () => {
+  if (!fb || !fb.user) return;
+  if (!confirm(t("logout_confirm"))) return;
   await fb.authMod.signOut(fb.auth);
-  toast("Sei uscito. I dati restano anche su questo dispositivo.");
+  toast(t("logout_done"));
+  updateGates(); route(); renderAuthUI();
 });
-
-// ── backup / ripristino ──
-function renderDataInfo() {
-  $("dataInfo").textContent =
-    `${state.wishes.length} desideri (${bellaWishes().length} in bella) · ${state.readings.length} letture registrate su questo dispositivo.`;
-}
-$("exportBtn").addEventListener("click", () => {
-  const blob = new Blob([JSON.stringify({ app: "101-desideri", exportedAt: new Date().toISOString(), ...state }, null, 2)],
-    { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `101-desideri-backup-${todayStr()}.json`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  toast("Backup scaricato 📥 Conservalo (Drive, iCloud, email a te stesso…)");
-});
-$("importBtn").addEventListener("click", () => $("importFile").click());
-$("importFile").addEventListener("change", async (e) => {
-  const file = e.target.files[0];
-  e.target.value = "";
-  if (!file) return;
-  try {
-    const data = JSON.parse(await file.text());
-    if (!Array.isArray(data.wishes)) throw new Error("formato non riconosciuto");
-    const ok = confirm(`Il backup contiene ${data.wishes.length} desideri e ${(data.readings || []).length} letture.\n\nSostituisce quello che c'è adesso qui (${state.wishes.length} desideri). Procedo?`);
-    if (!ok) return;
-    state = { wishes: data.wishes, readings: data.readings || [], updatedAt: Date.now() };
-    persist();
-    renderDataInfo();
-    toast("Quaderni ripristinati ✨");
-  } catch (err) {
-    toast("⚠️ File non valido: serve un backup creato da questa app.", 4000);
+$("syncBanner").addEventListener("click", () => {
+  if (window.FIREBASE_CONFIG && fb && !fb.user) {
+    sessionStorage.removeItem(SKIP_KEY);
+    updateGates(); route();
   }
 });
 
 // ── avvio ──
+setLang(lang);                 // imposta la classe lang-* sul body
+refreshLangUI();
+$("wishSubmit").textContent = t("btn_add");
+$("wordCounter").textContent = t("words_count", { n: 2 });
+$("startReading").textContent = t("btn_start_reading");
+$("readNext").textContent = t("btn_next");
+updateGates();
 route();
 renderAll();
 initFirebase();
