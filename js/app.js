@@ -34,9 +34,13 @@ function persist() {
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const $ = (id) => document.getElementById(id);
-// le regole si leggono una volta per ogni NUOVO accesso (chiave per account)
+// le regole si leggono solo al primissimo accesso: se hai già desideri
+// in brutta (anche arrivati dal cloud) non ha senso rileggerle.
 const rulesKey = () => RULES_KEY + "." + (fb && fb.user ? fb.user.uid : "local");
-const rulesRead = () => localStorage.getItem(rulesKey()) === "1";
+const rulesRead = () =>
+  state.wishes.length > 0 ||
+  localStorage.getItem(rulesKey()) === "1" ||
+  localStorage.getItem(RULES_KEY) === "1";
 const skippedLogin = () => sessionStorage.getItem(SKIP_KEY) === "1";
 
 function esc(s) {
@@ -446,6 +450,7 @@ async function initFirebase() {
       updateGates(); route(); renderAuthUI();
       if (user) {
         await cloudFirstSync();
+        updateGates(); route();   // i desideri dal cloud possono sbloccare le regole
         if (!firstResolve && wasLoggedOut) location.hash = rulesRead() ? "#/brutta" : "#/regole";
       }
     });
