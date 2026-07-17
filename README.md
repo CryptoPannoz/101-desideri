@@ -29,9 +29,14 @@ Gli **errori ⛔ bloccano** il salvataggio; gli **avvisi ⚠️** si possono sup
 - `js/app.js` — stato, quaderni, lettura, sync
 - `js/firebase-config.js` — configurazione cloud (vedi sotto)
 
+## Mobile / PWA
+
+L'app è pensata **prima di tutto per il telefono**: barra di navigazione in basso, lettura a schede con swipe, tap target grandi. È una **PWA installabile**: dal browser del telefono → "Aggiungi a schermata Home" e diventa un'app con la sua icona, che funziona **anche offline** (service worker `sw.js`; quando pubblichi modifiche, incrementa `CACHE` in `sw.js`).
+
 ## Dati e account
 
 L'app funziona **subito in modalità locale** (localStorage, dati solo sul dispositivo).
+In **Account → I tuoi dati** si può scaricare un **backup JSON** dei quaderni e ripristinarlo su qualsiasi dispositivo (utile anche per passare i dati da telefono a computer senza cloud).
 Con Firebase configurato si sbloccano **login con Google**, **email/password** e il **salvataggio cloud** (i quaderni ti seguono su ogni dispositivo).
 
 ### Attivare Firebase (una volta sola, ~10 minuti)

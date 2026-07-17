@@ -1,0 +1,16 @@
+{
+  "name": "101 Desideri — la tecnica di Igor Sibaldi",
+  "short_name": "101 Desideri",
+  "description": "Quaderno di brutta, quaderno di bella e lettura quotidiana: la tecnica dei 101 desideri di Igor Sibaldi.",
+  "lang": "it",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#faf5ec",
+  "theme_color": "#faf5ec",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

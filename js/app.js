@@ -50,7 +50,7 @@ function route() {
   const r = (location.hash.replace("#/", "") || "regole").split("?")[0];
   const view = ROUTES.includes(r) ? r : "regole";
   ROUTES.forEach(v => $("view-" + v).classList.toggle("hidden", v !== view));
-  document.querySelectorAll("#mainNav a").forEach(a =>
+  document.querySelectorAll("#mainNav a, .tabbar a").forEach(a =>
     a.classList.toggle("active", a.dataset.route === view));
   if (view !== "lettura") exitReadingMode();
   window.scrollTo({ top: 0 });
@@ -67,6 +67,7 @@ function renderAll() {
   renderBrutta();
   renderBella();
   renderLettura();
+  renderDataInfo();
 }
 
 function renderCounters() {
@@ -305,7 +306,7 @@ $("startReading").addEventListener("click", () => {
 function showReadingCard() {
   const w = reading.list[reading.idx];
   $("readingProgress").textContent = `${reading.idx + 1} di ${reading.list.length}`;
-  $("readingCard").innerHTML = wishHTML(w) + (w.realized ? ' <span class="cross">✗</span>' : "");
+  $("readingCard").innerHTML = "<div>" + wishHTML(w) + (w.realized ? ' <span class="cross">✗</span>' : "") + "</div>";
   $("readPrev").disabled = reading.idx === 0;
   $("readNext").textContent = reading.idx === reading.list.length - 1 ? "Fine ✨" : "avanti →";
 }
@@ -323,6 +324,17 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "ArrowRight" || e.key === " ") $("readNext").click();
   if (e.key === "ArrowLeft") $("readPrev").click();
 });
+// swipe sul telefono per sfogliare
+let touchX = null;
+$("readingCard").addEventListener("touchstart", (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+$("readingCard").addEventListener("touchend", (e) => {
+  if (touchX === null) return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  touchX = null;
+  if (Math.abs(dx) < 45) return;
+  dx < 0 ? $("readNext").click() : $("readPrev").click();
+}, { passive: true });
+
 $("exitReading").addEventListener("click", exitReadingMode);
 $("backFromDone").addEventListener("click", () => { location.hash = "#/lettura"; exitReadingMode(); });
 function exitReadingMode() {
@@ -467,7 +479,44 @@ $("logoutBtn").addEventListener("click", async () => {
   toast("Sei uscito. I dati restano anche su questo dispositivo.");
 });
 
+// ── backup / ripristino ──
+function renderDataInfo() {
+  $("dataInfo").textContent =
+    `${state.wishes.length} desideri (${bellaWishes().length} in bella) · ${state.readings.length} letture registrate su questo dispositivo.`;
+}
+$("exportBtn").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify({ app: "101-desideri", exportedAt: new Date().toISOString(), ...state }, null, 2)],
+    { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `101-desideri-backup-${todayStr()}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast("Backup scaricato 📥 Conservalo (Drive, iCloud, email a te stesso…)");
+});
+$("importBtn").addEventListener("click", () => $("importFile").click());
+$("importFile").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    if (!Array.isArray(data.wishes)) throw new Error("formato non riconosciuto");
+    const ok = confirm(`Il backup contiene ${data.wishes.length} desideri e ${(data.readings || []).length} letture.\n\nSostituisce quello che c'è adesso qui (${state.wishes.length} desideri). Procedo?`);
+    if (!ok) return;
+    state = { wishes: data.wishes, readings: data.readings || [], updatedAt: Date.now() };
+    persist();
+    renderDataInfo();
+    toast("Quaderni ripristinati ✨");
+  } catch (err) {
+    toast("⚠️ File non valido: serve un backup creato da questa app.", 4000);
+  }
+});
+
 // ── avvio ──
 route();
 renderAll();
 initFirebase();
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}

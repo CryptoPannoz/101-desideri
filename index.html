@@ -2,9 +2,16 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>101 Desideri — la tecnica di Igor Sibaldi</title>
 <meta name="description" content="App per praticare la tecnica dei 101 desideri: quaderno di brutta, quaderno di bella e lettura quotidiana, con le regole di Igor Sibaldi.">
+<meta name="theme-color" content="#faf5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="101 Desideri">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -229,9 +236,28 @@
         <button id="logoutBtn" class="btn btn-ghost">Esci</button>
       </div>
     </div>
+
+    <div class="auth-box data-box">
+      <h2>💾 I tuoi dati</h2>
+      <p class="auth-sub">I quaderni vivono su questo dispositivo (e nel cloud, se accedi). Qui puoi scaricarne una copia di sicurezza o riportarli su un altro telefono.</p>
+      <div class="data-actions">
+        <button id="exportBtn" class="btn btn-primary">Scarica backup 📥</button>
+        <button id="importBtn" class="btn btn-ghost">Ripristina da backup</button>
+        <input type="file" id="importFile" accept=".json,application/json" hidden>
+      </div>
+      <p class="data-hint" id="dataInfo"></p>
+    </div>
   </section>
 
 </main>
+
+<nav class="tabbar" id="tabbar">
+  <a href="#/regole" data-route="regole"><span class="t-ico">📜</span><span>Regole</span></a>
+  <a href="#/brutta" data-route="brutta"><span class="t-ico">✏️</span><span>Brutta</span></a>
+  <a href="#/bella" data-route="bella"><span class="t-ico">📖</span><span>Bella</span></a>
+  <a href="#/lettura" data-route="lettura"><span class="t-ico">🌅</span><span>Lettura</span></a>
+  <a href="#/account" data-route="account"><span class="t-ico">👤</span><span>Account</span></a>
+</nav>
 
 <footer class="footer">
   <p>Tecnica dei 101 desideri di <strong>Igor Sibaldi</strong> · fatta app con affetto ·
