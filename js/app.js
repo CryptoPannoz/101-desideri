@@ -99,6 +99,7 @@ $("langSwitch").addEventListener("click", (e) => {
   const b = e.target.closest("button[data-lang]");
   if (!b) return;
   setLang(b.dataset.lang);
+  $("authError").classList.add("hidden");   // un eventuale errore resterebbe nella lingua vecchia
   refreshLangUI();
   liveValidate();
 });
