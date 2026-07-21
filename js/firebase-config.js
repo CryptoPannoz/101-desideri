@@ -1,13 +1,26 @@
 // ── Configurazione Firebase ──────────────────────────────────────
-// Finché resta `null`, l'app funziona in MODALITÀ LOCALE:
-// i dati vengono salvati solo su questo dispositivo (localStorage).
 //
-// Per attivare login (Google + email/password) e salvataggio cloud:
-// 1. Vai su https://console.firebase.google.com e crea un progetto.
-// 2. Aggiungi un'app Web e copia qui l'oggetto firebaseConfig.
-// 3. In Authentication → Sign-in method attiva "Google" e "Email/password".
-// 4. In Firestore crea il database e usa le regole del README.
-// Le chiavi firebaseConfig NON sono segrete: possono stare nel repo.
+// ⚠️ NOTA PER CHI LEGGE (e per gli scanner di sicurezza)
+// `apiKey` NON è una password e NON va revocata: per le app web Firebase
+// è un IDENTIFICATIVO PUBBLICO del progetto, per progetto visibile nel
+// codice del browser. Da sola non dà accesso ad alcun dato.
+// Documentazione: https://firebase.google.com/docs/projects/api-keys
+//
+// Ad accedere ai dati ci pensano tre livelli, tutti attivi:
+//  1. Regole Firestore (`firestore.rules`) — ogni utente legge/scrive SOLO
+//     il proprio documento `utenti/{uid}`, previa autenticazione.
+//  2. Authorized domains (Firebase Auth) — il login funziona solo dai
+//     nostri domini.
+//  3. Restrizioni della chiave (Google Cloud → Credentials) — la chiave
+//     accetta richieste solo dai nostri referrer ed è limitata alle API
+//     identitytoolkit / securetoken / firestore / installations / fcm.
+//
+// Se cambi dominio, aggiorna sia gli Authorized domains sia i referrer
+// consentiti della chiave, altrimenti il login smette di funzionare.
+//
+// Se `FIREBASE_CONFIG` è `null`, l'app funziona in MODALITÀ LOCALE:
+// i dati restano su questo dispositivo (localStorage). Per rigenerare
+// questa configurazione su un altro progetto vedi il README.
 
 window.FIREBASE_CONFIG = {
   apiKey: "AIzaSyCErhl1BlC8PgWjroo90k_kxbiMKvZKTsE",

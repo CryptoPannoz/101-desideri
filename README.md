@@ -70,6 +70,20 @@ service cloud.firestore {
 
 Ogni utente può leggere e scrivere **solo il proprio** documento: i desideri restano privati.
 
+## Sicurezza e privacy
+
+La `apiKey` in `js/firebase-config.js` è **pubblica per progetto**: nelle app web Firebase è un identificativo, non una password, ed è per progetto visibile nel codice del browser ([doc ufficiale](https://firebase.google.com/docs/projects/api-keys)). Gli scanner di segreti la segnalano lo stesso: **non va revocata** — revocarla romperebbe l'app senza aumentare la sicurezza.
+
+I dati sono protetti da tre livelli, tutti attivi:
+
+1. **Regole Firestore** (`firestore.rules`): ogni utente autenticato legge e scrive solo `utenti/{suo-uid}`. Nessun utente può vedere i desideri di un altro.
+2. **Authorized domains** (Firebase Auth): il login funziona solo dai domini registrati.
+3. **Restrizioni della chiave** (Google Cloud → APIs & Services → Credentials): referrer consentiti (`cryptopannoz.github.io`, i domini Firebase, localhost) e sole API `identitytoolkit`, `securetoken`, `firestore`, `firebaseinstallations`, `fcmregistrations`.
+
+> **Cambio di dominio:** aggiorna sia gli *Authorized domains* di Auth sia i *referrer consentiti* della chiave, altrimenti il login smette di funzionare.
+
+Nota di trasparenza: il proprietario del progetto Firebase può tecnicamente vedere i documenti dalla console (vale per qualunque app non end-to-end encrypted). Per questo l'app promette che *nessun altro utente* può leggere i desideri, non che siano illeggibili in assoluto.
+
 ## Deploy
 
 GitHub Pages dal branch `main` (cartella root). Ogni `git push` aggiorna il sito.
