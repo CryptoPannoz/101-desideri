@@ -70,6 +70,22 @@ service cloud.firestore {
 
 Ogni utente può leggere e scrivere **solo il proprio** documento: i desideri restano privati.
 
+## Attribuzione e indipendenza
+
+**App indipendente, non affiliata né approvata da Igor Sibaldi.**
+
+La tecnica dei 101 desideri è di **origine buddista** (i "101 desideri tibetani") ed è stata rielaborata e divulgata da Igor Sibaldi — che ne riconosce lui stesso la matrice preesistente. Questa app è una realizzazione **personale e gratuita** ispirata a quel metodo.
+
+Criteri seguiti nella stesura dei contenuti:
+
+- **Nessun testo, esempio o citazione** tratti dai libri o dai seminari di Sibaldi: tutte le spiegazioni e gli esempi delle regole sono redazionali e originali.
+- Il **metodo in sé** (quantità, sequenza, criteri di formulazione) non è tutelabile dal diritto d'autore, che protegge la forma espressiva e non le idee o i procedimenti.
+- Il nome dell'autore è usato in senso **puramente descrittivo/referenziale**, per indicare la fonte del metodo — mai come marchio dell'app, né nel dominio, né in modo da suggerire patrocinio.
+- Il video del seminario è **incorporato dal canale ufficiale YouTube** (mai ri-caricato) e il footer rimanda a `igorsibaldi.com`.
+- Verifiche svolte (21/07/2026): nessun marchio attivo su "101 desideri" né su "Sibaldi" nei registri consultabili via TMview (EUIPO + uffici nazionali).
+
+> Se in futuro l'app venisse **monetizzata** o promossa su larga scala, è opportuno un parere legale specialistico in proprietà intellettuale.
+
 ## Sicurezza e privacy
 
 La `apiKey` in `js/firebase-config.js` è **pubblica per progetto**: nelle app web Firebase è un identificativo, non una password, ed è per progetto visibile nel codice del browser ([doc ufficiale](https://firebase.google.com/docs/projects/api-keys)). Gli scanner di segreti la segnalano lo stesso: **non va revocata** — revocarla romperebbe l'app senza aumentare la sicurezza.
